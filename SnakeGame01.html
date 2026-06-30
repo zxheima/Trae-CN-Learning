@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贪吃蛇游戏</title>
+    <style>
+        /* ==================== 全局样式 ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* ==================== 游戏容器 ==================== */
+        .game-container {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            text-align: center;
+            max-width: 550px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* ==================== 游戏标题 ==================== */
+        .game-title {
+            color: #e2e8f0;
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            letter-spacing: 2px;
+        }
+
+        /* ==================== 分数面板 ==================== */
+        .score-panel {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .score-item {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 100%);
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: #e2e8f0;
+            font-size: 1rem;
+            border: 1px solid rgba(100, 150, 200, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .score-item .label {
+            color: #94a3b8;
+        }
+
+        .score-item .value {
+            font-weight: bold;
+            font-size: 1.4rem;
+            margin-left: 8px;
+            color: #60a5fa;
+        }
+
+        /* ==================== 游戏区域 ==================== */
+        .game-area {
+            background: #1F2937;
+            border-radius: 15px;
+            padding: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        #gameCanvas {
+            border-radius: 8px;
+            display: block;
+        }
+
+        /* ==================== 控制按钮面板 ==================== */
+        .control-panel {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-start:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-pause {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .btn-pause:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-restart {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-restart:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ==================== 游戏状态提示 ==================== */
+        .status {
+            font-size: 1.1rem;
+            font-weight: 600;
+            min-height: 28px;
+            margin-bottom: 15px;
+            padding: 8px 16px;
+            border-radius: 8px;
+        }
+
+        .status.idle {
+            color: #94a3b8;
+        }
+
+        .status.running {
+            color: #34d399;
+            background: rgba(52, 211, 153, 0.1);
+        }
+
+        .status.paused {
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+        }
+
+        .status.gameover {
+            color: #f87171;
+            background: rgba(248, 113, 113, 0.1);
+        }
+
+        /* ==================== 背景选择按钮 ==================== */
+        .theme-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .theme-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .theme-btn-icon {
+            font-size: 1.2rem;
+        }
+
+        /* ==================== 背景选择面板 ==================== */
+        .theme-panel {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: rgba(30, 41, 59, 0.98);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            z-index: 1000;
+            display: none;
+            min-width: 220px;
+            animation: panelFadeIn 0.3s ease;
+        }
+
+        .theme-panel.show {
+            display: block;
+        }
+
+        @keyframes panelFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .theme-panel-title {
+            color: #e2e8f0;
+            font-size: 0.95rem;
+            margin-bottom: 16px;
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .theme-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .theme-option {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: 2px solid transparent;
+            gap: 12px;
+        }
+
+        .theme-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-option.active {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.15);
+        }
+
+        .theme-preview {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .theme-preview-dark {
+            width: 50%;
+            height: 100%;
+        }
+
+        .theme-preview-light {
+            width: 50%;
+            height: 100%;
+        }
+
+        .theme-name {
+            color: #e2e8f0;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .theme-option.active .theme-name {
+            color: #60a5fa;
+        }
+
+        /* 各主题预览颜色 */
+        .theme-default .theme-preview-dark { background: #1F2937; }
+        .theme-default .theme-preview-light { background: #263445; }
+
+        .theme-blackgold .theme-preview-dark { background: #1a1a1a; }
+        .theme-blackgold .theme-preview-light { background: #2a2a2a; }
+
+        /* ==================== 主题样式覆盖 ==================== */
+        body.theme-blackgold {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #2a2a2a 100%);
+        }
+
+        body.theme-blackgold .game-container {
+            background: rgba(20, 20, 20, 0.95);
+            border-color: rgba(212, 175, 55, 0.3);
+        }
+
+        body.theme-blackgold .game-title {
+            color: #d4af37;
+        }
+
+        body.theme-blackgold .score-item {
+            background: linear-gradient(135deg, #2a2a1a 0%, #1a1a0a 100%);
+            border-color: rgba(212, 175, 55, 0.2);
+        }
+
+        body.theme-blackgold .score-item .value {
+            color: #d4af37;
+        }
+
+        body.theme-blackgold .game-area {
+            background: #1a1a1a;
+            box-shadow: inset 0 2px 10px rgba(212, 175, 55, 0.2);
+        }
+
+        body.theme-blackgold .rules {
+            background: rgba(10, 10, 10, 0.5);
+            border-color: rgba(212, 175, 55, 0.15);
+        }
+
+        body.theme-blackgold .rules h3 {
+            color: #d4af37;
+        }
+
+        body.theme-blackgold .rules li::before {
+            color: #d4af37;
+        }
+
+        /* ==================== 游戏规则 ==================== */
+        .rules {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 12px;
+            padding: 18px;
+            text-align: left;
+            border: 1px solid rgba(100, 150, 200, 0.15);
+        }
+
+        .rules h3 {
+            color: #e2e8f0;
+            margin-bottom: 12px;
+            text-align: center;
+            font-size: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .rules ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .rules li {
+            padding: 6px 0;
+            padding-left: 22px;
+            position: relative;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .rules li::before {
+            content: '•';
+            position: absolute;
+            left: 6px;
+            color: #60a5fa;
+            font-weight: bold;
+        }
+
+        /* ==================== 响应式设计 ==================== */
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 18px;
+                margin: 10px;
+            }
+
+            .game-title {
+                font-size: 1.6rem;
+            }
+
+            .score-panel {
+                gap: 15px;
+            }
+
+            .score-item {
+                padding: 10px 16px;
+                font-size: 0.85rem;
+            }
+
+            .btn {
+                padding: 10px 18px;
+                font-size: 0.85rem;
+            }
+
+            .rules {
+                padding: 14px;
+            }
+
+            .rules li {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景选择按钮 -->
+    <button class="theme-btn" id="themeBtn">
+        <span class="theme-btn-icon">🎨</span>
+        <span>背景</span>
+    </button>
+
+    <!-- 背景选择面板 -->
+    <div class="theme-panel" id="themePanel">
+        <div class="theme-panel-title">选择背景风格</div>
+        <div class="theme-options">
+            <div class="theme-option theme-default active" data-theme="default">
+                <div class="theme-preview">
+                    <div class="theme-preview-dark"></div>
+                    <div class="theme-preview-light"></div>
+                </div>
+                <span class="theme-name">暗夜护眼</span>
+            </div>
+            <div class="theme-option theme-blackgold" data-theme="blackgold">
+                <div class="theme-preview">
+                    <div class="theme-preview-dark"></div>
+                    <div class="theme-preview-light"></div>
+                </div>
+                <span class="theme-name">黑金奢华</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <h1 class="game-title">🐍 贪吃蛇</h1>
+        
+        <div class="score-panel">
+            <div class="score-item">
+                <span class="label">当前分数</span>
+                <span class="value" id="currentScore">0</span>
+            </div>
+            <div class="score-item">
+                <span class="label">最高分</span>
+                <span class="value" id="highScore">0</span>
+            </div>
+        </div>
+        
+        <div class="game-area">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        
+        <div class="control-panel">
+            <button id="startBtn" class="btn btn-start">开始游戏</button>
+            <button id="pauseBtn" class="btn btn-pause" disabled>暂停</button>
+            <button id="restartBtn" class="btn btn-restart">重新开始</button>
+        </div>
+        
+        <div id="gameStatus" class="status idle">按「开始游戏」或空格键开始</div>
+        
+        <div class="rules">
+            <h3>游戏规则</h3>
+            <ul>
+                <li>使用方向键 ↑↓←→ 或 WASD 控制蛇移动</li>
+                <li>吃到食物后蛇身增长并获得 10 分</li>
+                <li>撞到边界或自身身体时游戏结束</li>
+                <li>按空格键暂停/继续游戏</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ==================== 游戏配置 ====================
+         */
+        const CONFIG = {
+            GRID_SIZE: 18,
+            GRID_COLS: 22,
+            GRID_ROWS: 16,
+            INITIAL_SPEED: 140,
+            SPEED_INCREMENT: 3,
+            MIN_SPEED: 50,
+            FOOD_SCORE: 10,
+            THEMES: {
+                default: {
+                    name: '暗夜护眼',
+                    colors: {
+                        BG_DARK: '#1F2937',
+                        BG_LIGHT: '#263445',
+                        GRID_LINE: '#2d3b4d',
+                        SNAKE_HEAD: '#34d399',
+                        SNAKE_BODY: '#10b981',
+                        SNAKE_BODY_ALT: '#059669',
+                        FOOD: '#f472b6',
+                        FOOD_GLOW: '#ec4899',
+                        SNAKE_EYE: '#1F2937'
+                    }
+                },
+                blackgold: {
+                    name: '黑金奢华',
+                    colors: {
+                        BG_DARK: '#1a1a1a',
+                        BG_LIGHT: '#2a2a2a',
+                        GRID_LINE: '#3a3a3a',
+                        SNAKE_HEAD: '#d4af37',
+                        SNAKE_BODY: '#b8962e',
+                        SNAKE_BODY_ALT: '#997d26',
+                        FOOD: '#ffd700',
+                        FOOD_GLOW: '#ffb700',
+                        SNAKE_EYE: '#0a0a0a'
+                    }
+                }
+            },
+            COLORS: null
+        };
+
+        /**
+         * ==================== 音效管理器 ====================
+         */
+        class SoundManager {
+            constructor() {
+                this.audioContext = null;
+            }
+
+            init() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playTone(frequency, duration, type = 'sine', volume = 0.08) {
+                if (!this.audioContext) return;
+                try {
+                    const oscillator = this.audioContext.createOscillator();
+                    const gainNode = this.audioContext.createGain();
+                    oscillator.type = type;
+                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                    oscillator.connect(gainNode);
+                    gainNode.connect(this.audioContext.destination);
+                    oscillator.start(this.audioContext.currentTime);
+                    oscillator.stop(this.audioContext.currentTime + duration);
+                } catch (e) {}
+            }
+
+            playEat() {
+                this.playTone(600, 0.08, 'sine');
+                setTimeout(() => this.playTone(800, 0.1, 'sine', 0.06), 60);
+            }
+
+            playGameOver() {
+                this.playTone(300, 0.2, 'sawtooth', 0.06);
+                setTimeout(() => this.playTone(200, 0.25, 'sawtooth', 0.05), 150);
+            }
+
+            playStart() {
+                this.playTone(440, 0.1, 'sine');
+                setTimeout(() => this.playTone(660, 0.1, 'sine'), 80);
+            }
+        }
+
+        /**
+         * ==================== 主题管理器 ====================
+         */
+        class ThemeManager {
+            constructor() {
+                this.currentTheme = this.loadTheme();
+                this.applyTheme(this.currentTheme);
+            }
+
+            loadTheme() {
+                const saved = localStorage.getItem('snake_game_theme');
+                if (saved && CONFIG.THEMES[saved]) {
+                    return saved;
+                }
+                return 'default';
+            }
+
+            saveTheme(theme) {
+                localStorage.setItem('snake_game_theme', theme);
+            }
+
+            applyTheme(theme) {
+                this.currentTheme = theme;
+                CONFIG.COLORS = CONFIG.THEMES[theme].colors;
+
+                document.body.className = theme === 'default' ? '' : 'theme-' + theme;
+
+                const options = document.querySelectorAll('.theme-option');
+                options.forEach(opt => {
+                    opt.classList.toggle('active', opt.dataset.theme === theme);
+                });
+
+                this.saveTheme(theme);
+            }
+
+            togglePanel() {
+                const panel = document.getElementById('themePanel');
+                panel.classList.toggle('show');
+            }
+
+            hidePanel() {
+                const panel = document.getElementById('themePanel');
+                panel.classList.remove('show');
+            }
+
+            setupEventListeners() {
+                const themeBtn = document.getElementById('themeBtn');
+                const themePanel = document.getElementById('themePanel');
+                const options = document.querySelectorAll('.theme-option');
+
+                themeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.togglePanel();
+                });
+
+                options.forEach(option => {
+                    option.addEventListener('click', () => {
+                        const theme = option.dataset.theme;
+                        this.applyTheme(theme);
+                        this.hidePanel();
+
+                        if (window.snakeGame && window.snakeGame.renderer) {
+                            window.snakeGame.renderer.render(window.snakeGame.snake, window.snakeGame.food);
+                        }
+                    });
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!themePanel.contains(e.target) && !themeBtn.contains(e.target)) {
+                        this.hidePanel();
+                    }
+                });
+            }
+        }
+
+        /**
+         * ==================== 游戏状态管理 ====================
+         */
+        class GameState {
+            constructor() {
+                this.score = 0;
+                this.highScore = this.loadHighScore();
+                this.status = 'idle';
+                this.speed = CONFIG.INITIAL_SPEED;
+            }
+
+            loadHighScore() {
+                const saved = localStorage.getItem('snake_game_highscore');
+                return saved ? parseInt(saved, 10) : 0;
+            }
+
+            saveHighScore() {
+                if (this.score > this.highScore) {
+                    this.highScore = this.score;
+                    localStorage.setItem('snake_game_highscore', this.highScore.toString());
+                }
+            }
+
+            addScore() {
+                this.score += CONFIG.FOOD_SCORE;
+            }
+
+            increaseSpeed() {
+                this.speed = Math.max(CONFIG.MIN_SPEED, this.speed - CONFIG.SPEED_INCREMENT);
+            }
+
+            reset() {
+                this.score = 0;
+                this.speed = CONFIG.INITIAL_SPEED;
+                this.status = 'idle';
+            }
+        }
+
+        /**
+         * ==================== 蛇对象 ====================
+         */
+        class Snake {
+            constructor() {
+                this.segments = [];
+                this.direction = { x: 1, y: 0 };
+                this.nextDirection = { x: 1, y: 0 };
+                this.init();
+            }
+
+            init() {
+                const startX = Math.floor(CONFIG.GRID_COLS / 2) - 2;
+                const startY = Math.floor(CONFIG.GRID_ROWS / 2);
+                this.segments = [
+                    { x: startX, y: startY },
+                    { x: startX - 1, y: startY },
+                    { x: startX - 2, y: startY }
+                ];
+                this.direction = { x: 1, y: 0 };
+                this.nextDirection = { x: 1, y: 0 };
+            }
+
+            setDirection(dx, dy) {
+                if (dx === -this.direction.x && dy === -this.direction.y) return;
+                this.nextDirection = { x: dx, y: dy };
+            }
+
+            move() {
+                this.direction = this.nextDirection;
+                const head = this.segments[0];
+                this.segments.unshift({
+                    x: head.x + this.direction.x,
+                    y: head.y + this.direction.y
+                });
+            }
+
+            grow() {}
+
+            shrink() {
+                this.segments.pop();
+            }
+
+            getHead() {
+                return this.segments[0];
+            }
+
+            getBody() {
+                return this.segments.slice(1);
+            }
+        }
+
+        /**
+         * ==================== 食物对象 ====================
+         */
+        class Food {
+            constructor() {
+                this.x = 0;
+                this.y = 0;
+                this.pulsePhase = 0;
+            }
+
+            spawn(snakeSegments) {
+                let validPosition = false;
+                let attempts = 0;
+                const maxAttempts = CONFIG.GRID_COLS * CONFIG.GRID_ROWS;
+                while (!validPosition && attempts < maxAttempts) {
+                    this.x = Math.floor(Math.random() * CONFIG.GRID_COLS);
+                    this.y = Math.floor(Math.random() * CONFIG.GRID_ROWS);
+                    validPosition = !snakeSegments.some(seg => seg.x === this.x && seg.y === this.y);
+                    attempts++;
+                }
+            }
+
+            updatePulse() {
+                this.pulsePhase = (this.pulsePhase + 0.15) % (Math.PI * 2);
+            }
+        }
+
+        /**
+         * ==================== 碰撞检测器 ====================
+         */
+        class CollisionDetector {
+            static checkWallCollision(head) {
+                return head.x < 0 || head.x >= CONFIG.GRID_COLS || 
+                       head.y < 0 || head.y >= CONFIG.GRID_ROWS;
+            }
+
+            static checkSelfCollision(head, body) {
+                return body.some(seg => seg.x === head.x && seg.y === head.y);
+            }
+
+            static checkFoodCollision(head, food) {
+                return head.x === food.x && head.y === food.y;
+            }
+        }
+
+        /**
+         * ==================== Canvas渲染器 ====================
+         */
+        class CanvasRenderer {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.setupCanvas();
+            }
+
+            setupCanvas() {
+                const dpr = window.devicePixelRatio || 1;
+                const width = CONFIG.GRID_COLS * CONFIG.GRID_SIZE;
+                const height = CONFIG.GRID_ROWS * CONFIG.GRID_SIZE;
+                this.canvas.width = width * dpr;
+                this.canvas.height = height * dpr;
+                this.canvas.style.width = width + 'px';
+                this.canvas.style.height = height + 'px';
+                this.ctx.scale(dpr, dpr);
+            }
+
+            clear() {
+                this.ctx.fillStyle = CONFIG.COLORS.BG_DARK;
+                this.ctx.fillRect(0, 0, CONFIG.GRID_COLS * CONFIG.GRID_SIZE, CONFIG.GRID_ROWS * CONFIG.GRID_SIZE);
+            }
+
+            drawGrid() {
+                const gs = CONFIG.GRID_SIZE;
+                for (let x = 0; x < CONFIG.GRID_COLS; x++) {
+                    for (let y = 0; y < CONFIG.GRID_ROWS; y++) {
+                        const isAlt = (x + y) % 2 === 0;
+                        this.ctx.fillStyle = isAlt ? CONFIG.COLORS.BG_DARK : CONFIG.COLORS.BG_LIGHT;
+                        this.ctx.fillRect(x * gs, y * gs, gs, gs);
+                    }
+                }
+                this.ctx.strokeStyle = CONFIG.COLORS.GRID_LINE;
+                this.ctx.lineWidth = 0.3;
+                for (let x = 0; x <= CONFIG.GRID_COLS; x++) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x * gs, 0);
+                    this.ctx.lineTo(x * gs, CONFIG.GRID_ROWS * gs);
+                    this.ctx.stroke();
+                }
+                for (let y = 0; y <= CONFIG.GRID_ROWS; y++) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, y * gs);
+                    this.ctx.lineTo(CONFIG.GRID_COLS * gs, y * gs);
+                    this.ctx.stroke();
+                }
+            }
+
+            drawSnake(snake) {
+                const gs = CONFIG.GRID_SIZE;
+                snake.segments.forEach((segment, index) => {
+                    const x = segment.x * gs;
+                    const y = segment.y * gs;
+                    const padding = 1;
+                    const size = gs - padding * 2;
+                    const radius = size / 4;
+
+                    if (index === 0) {
+                        this.drawSnakeHead(x + padding, y + padding, size, radius);
+                    } else {
+                        this.drawSnakeBody(x + padding, y + padding, size, radius, index);
+                    }
+                });
+            }
+
+            drawSnakeHead(x, y, size, radius) {
+                const gradient = this.ctx.createRadialGradient(
+                    x + size / 2, y + size / 2, 0,
+                    x + size / 2, y + size / 2, size / 2
+                );
+                gradient.addColorStop(0, '#5eead4');
+                gradient.addColorStop(1, CONFIG.COLORS.SNAKE_HEAD);
+
+                this.ctx.fillStyle = gradient;
+                this.ctx.beginPath();
+                this.roundRect(x, y, size, size, radius);
+                this.ctx.fill();
+
+                this.ctx.fillStyle = CONFIG.COLORS.SNAKE_EYE;
+                const eyeSize = size / 7;
+                this.ctx.beginPath();
+                this.ctx.arc(x + size * 0.3, y + size * 0.35, eyeSize, 0, Math.PI * 2);
+                this.ctx.arc(x + size * 0.7, y + size * 0.35, eyeSize, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+
+            drawSnakeBody(x, y, size, radius, index) {
+                const alpha = Math.max(0.6, 1 - index * 0.015);
+                const gradient = this.ctx.createLinearGradient(x, y, x + size, y + size);
+                gradient.addColorStop(0, `rgba(16, 185, 129, ${alpha})`);
+                gradient.addColorStop(1, `rgba(5, 150, 105, ${alpha})`);
+
+                this.ctx.fillStyle = gradient;
+                this.ctx.beginPath();
+                this.roundRect(x, y, size, size, radius);
+                this.ctx.fill();
+            }
+
+            drawFood(food) {
+                const gs = CONFIG.GRID_SIZE;
+                const cx = food.x * gs + gs / 2;
+                const cy = food.y * gs + gs / 2;
+                const baseRadius = gs / 2 - 3;
+                const pulseRadius = baseRadius + Math.sin(food.pulsePhase) * 1.5;
+
+                const glow = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, pulseRadius * 1.5);
+                glow.addColorStop(0, 'rgba(244, 114, 182, 0.3)');
+                glow.addColorStop(1, 'rgba(244, 114, 182, 0)');
+                this.ctx.fillStyle = glow;
+                this.ctx.beginPath();
+                this.ctx.arc(cx, cy, pulseRadius * 1.5, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                const gradient = this.ctx.createRadialGradient(
+                    cx - pulseRadius * 0.3, cy - pulseRadius * 0.3, 0,
+                    cx, cy, pulseRadius
+                );
+                gradient.addColorStop(0, '#f9a8d4');
+                gradient.addColorStop(0.5, CONFIG.COLORS.FOOD);
+                gradient.addColorStop(1, CONFIG.COLORS.FOOD_GLOW);
+
+                this.ctx.fillStyle = gradient;
+                this.ctx.beginPath();
+                this.ctx.arc(cx, cy, pulseRadius, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                this.ctx.beginPath();
+                this.ctx.arc(cx - pulseRadius * 0.3, cy - pulseRadius * 0.3, pulseRadius * 0.25, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+
+            roundRect(x, y, w, h, r) {
+                this.ctx.moveTo(x + r, y);
+                this.ctx.lineTo(x + w - r, y);
+                this.ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                this.ctx.lineTo(x + w, y + h - r);
+                this.ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                this.ctx.lineTo(x + r, y + h);
+                this.ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                this.ctx.lineTo(x, y + r);
+                this.ctx.quadraticCurveTo(x, y, x + r, y);
+                this.ctx.closePath();
+            }
+
+            render(snake, food) {
+                this.clear();
+                this.drawGrid();
+                food.updatePulse();
+                this.drawFood(food);
+                this.drawSnake(snake);
+            }
+        }
+
+        /**
+         * ==================== 输入处理器 ====================
+         */
+        class InputHandler {
+            constructor() {
+                this.keyMap = {
+                    'ArrowUp': { dx: 0, dy: -1 },
+                    'ArrowDown': { dx: 0, dy: 1 },
+                    'ArrowLeft': { dx: -1, dy: 0 },
+                    'ArrowRight': { dx: 1, dy: 0 },
+                    'KeyW': { dx: 0, dy: -1 },
+                    'KeyS': { dx: 0, dy: 1 },
+                    'KeyA': { dx: -1, dy: 0 },
+                    'KeyD': { dx: 1, dy: 0 }
+                };
+                this.onDirectionChange = null;
+                this.onPauseToggle = null;
+                this.onStart = null;
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                document.addEventListener('keydown', (e) => {
+                    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+                        e.preventDefault();
+                    }
+                    if (this.keyMap[e.code] && this.onDirectionChange) {
+                        const { dx, dy } = this.keyMap[e.code];
+                        this.onDirectionChange(dx, dy);
+                    }
+                    if (e.code === 'Space') {
+                        if (this.onPauseToggle) this.onPauseToggle();
+                    }
+                });
+            }
+        }
+
+        /**
+         * ==================== 游戏主控制器 ====================
+         */
+        class SnakeGame {
+            constructor() {
+                this.themeManager = new ThemeManager();
+                this.state = new GameState();
+                this.snake = new Snake();
+                this.food = new Food();
+                this.renderer = new CanvasRenderer('gameCanvas');
+                this.inputHandler = new InputHandler();
+                this.soundManager = new SoundManager();
+                this.gameLoop = null;
+
+                this.initUI();
+                this.bindEvents();
+                this.updateScoreDisplay();
+                this.food.spawn(this.snake.segments);
+                this.renderer.render(this.snake, this.food);
+
+                this.themeManager.setupEventListeners();
+                window.snakeGame = this;
+            }
+
+            initUI() {
+                this.startBtn = document.getElementById('startBtn');
+                this.pauseBtn = document.getElementById('pauseBtn');
+                this.restartBtn = document.getElementById('restartBtn');
+                this.currentScoreEl = document.getElementById('currentScore');
+                this.highScoreEl = document.getElementById('highScore');
+                this.gameStatusEl = document.getElementById('gameStatus');
+                this.updateButtonState();
+            }
+
+            bindEvents() {
+                this.startBtn.addEventListener('click', () => this.start());
+                this.pauseBtn.addEventListener('click', () => this.togglePause());
+                this.restartBtn.addEventListener('click', () => this.restart());
+
+                this.inputHandler.onDirectionChange = (dx, dy) => {
+                    if (this.state.status === 'running') {
+                        this.snake.setDirection(dx, dy);
+                    }
+                };
+
+                this.inputHandler.onPauseToggle = () => {
+                    if (this.state.status === 'idle') {
+                        this.start();
+                    } else if (this.state.status === 'running' || this.state.status === 'paused') {
+                        this.togglePause();
+                    }
+                };
+            }
+
+            start() {
+                if (this.state.status === 'running') return;
+
+                this.soundManager.init();
+                this.soundManager.playStart();
+
+                if (this.state.status === 'gameover') {
+                    this.snake.init();
+                    this.food.spawn(this.snake.segments);
+                    this.state.reset();
+                }
+
+                this.state.status = 'running';
+                this.updateButtonState();
+                this.updateStatus('游戏进行中...', 'running');
+                this.runGameLoop();
+            }
+
+            togglePause() {
+                if (this.state.status === 'running') {
+                    this.state.status = 'paused';
+                    this.stopGameLoop();
+                    this.updateButtonState();
+                    this.updateStatus('游戏已暂停', 'paused');
+                } else if (this.state.status === 'paused') {
+                    this.state.status = 'running';
+                    this.updateButtonState();
+                    this.updateStatus('游戏进行中...', 'running');
+                    this.runGameLoop();
+                }
+            }
+
+            restart() {
+                this.stopGameLoop();
+                this.snake.init();
+                this.food.spawn(this.snake.segments);
+                this.state.reset();
+                this.updateButtonState();
+                this.updateScoreDisplay();
+                this.updateStatus('按「开始游戏」或空格键开始', 'idle');
+                this.renderer.render(this.snake, this.food);
+            }
+
+            runGameLoop() {
+                if (this.gameLoop) clearInterval(this.gameLoop);
+                this.gameLoop = setInterval(() => {
+                    this.update();
+                    this.render();
+                }, this.state.speed);
+            }
+
+            stopGameLoop() {
+                if (this.gameLoop) {
+                    clearInterval(this.gameLoop);
+                    this.gameLoop = null;
+                }
+            }
+
+            update() {
+                this.snake.move();
+                const head = this.snake.getHead();
+                const body = this.snake.getBody();
+
+                if (CollisionDetector.checkWallCollision(head)) {
+                    this.gameOver();
+                    return;
+                }
+
+                if (CollisionDetector.checkSelfCollision(head, body)) {
+                    this.gameOver();
+                    return;
+                }
+
+                if (CollisionDetector.checkFoodCollision(head, this.food)) {
+                    this.soundManager.playEat();
+                    this.snake.grow();
+                    this.state.addScore();
+                    this.state.increaseSpeed();
+                    this.food.spawn(this.snake.segments);
+                    this.updateScoreDisplay();
+                    this.runGameLoop();
+                } else {
+                    this.snake.shrink();
+                }
+            }
+
+            render() {
+                this.renderer.render(this.snake, this.food);
+            }
+
+            gameOver() {
+                this.stopGameLoop();
+                this.state.status = 'gameover';
+                this.state.saveHighScore();
+                this.soundManager.playGameOver();
+                this.updateButtonState();
+                this.updateScoreDisplay();
+                this.updateStatus(`游戏结束！得分：${this.state.score}`, 'gameover');
+            }
+
+            updateButtonState() {
+                const status = this.state.status;
+                this.startBtn.disabled = status === 'running';
+                this.pauseBtn.disabled = status !== 'running' && status !== 'paused';
+                this.pauseBtn.textContent = status === 'paused' ? '继续' : '暂停';
+            }
+
+            updateScoreDisplay() {
+                this.currentScoreEl.textContent = this.state.score;
+                this.highScoreEl.textContent = this.state.highScore;
+            }
+
+            updateStatus(text, className) {
+                this.gameStatusEl.textContent = text;
+                this.gameStatusEl.className = 'status ' + className;
+            }
+        }
+
+        // 页面加载完成后初始化游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            new SnakeGame();
+        });
+    </script>
+</body>
+</html>
