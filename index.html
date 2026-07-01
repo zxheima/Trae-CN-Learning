@@ -2,7 +2,12 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="format-detection" content="telephone=no">
     <title>贪吃蛇游戏</title>
     <style>
         /* ==================== 全局样式 ==================== */
@@ -10,16 +15,31 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html, body {
+            overscroll-behavior: contain;
+            touch-action: manipulation;
         }
 
         body {
             font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             padding: 20px;
+            padding-top: max(20px, env(safe-area-inset-top));
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
+            padding-left: max(20px, env(safe-area-inset-left));
+            padding-right: max(20px, env(safe-area-inset-right));
+            overflow-x: hidden;
         }
 
         /* ==================== 游戏容器 ==================== */
@@ -89,6 +109,11 @@
         #gameCanvas {
             border-radius: 8px;
             display: block;
+            max-width: 100%;
+            max-height: 100%;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: pixelated;
+            touch-action: none;
         }
 
         /* ==================== 控制按钮面板 ==================== */
@@ -390,37 +415,327 @@
             font-weight: bold;
         }
 
-        /* ==================== 响应式设计 ==================== */
-        @media (max-width: 480px) {
+        /* ==================== 屏幕方向锁定提示 ==================== */
+        .orientation-notice {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.92);
+            color: #e2e8f0;
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 20px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .orientation-notice.show {
+            display: flex;
+        }
+
+        .orientation-notice .rotate-icon {
+            font-size: 4rem;
+            animation: rotatePhone 2.5s ease-in-out infinite;
+        }
+
+        @keyframes rotatePhone {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-90deg); }
+        }
+
+        .orientation-notice h2 {
+            font-size: 1.4rem;
+            color: #60a5fa;
+        }
+
+        .orientation-notice p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+
+        .orientation-notice button {
+            margin-top: 10px;
+            padding: 10px 24px;
+            background: #60a5fa;
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* ==================== 触屏虚拟方向键 (D-Pad) ==================== */
+        .touch-controls {
+            display: none;
+            margin-top: 20px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 64px);
+            grid-template-rows: repeat(3, 64px);
+            gap: 4px;
+        }
+
+        .dpad-btn {
+            background: linear-gradient(145deg, rgba(59, 130, 246, 0.4), rgba(37, 99, 235, 0.3));
+            border: 1px solid rgba(96, 165, 250, 0.4);
+            color: #e0f2fe;
+            font-size: 1.8rem;
+            font-weight: bold;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.08s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.15),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .dpad-btn:active,
+        .dpad-btn.active {
+            background: linear-gradient(145deg, #3b82f6, #2563eb);
+            transform: scale(0.94);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .dpad-up    { grid-column: 2; grid-row: 1; }
+        .dpad-left  { grid-column: 1; grid-row: 2; }
+        .dpad-right { grid-column: 3; grid-row: 2; }
+        .dpad-down  { grid-column: 2; grid-row: 3; }
+
+        .dpad-center {
+            grid-column: 2;
+            grid-row: 2;
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 50%;
+            border: 2px solid rgba(96, 165, 250, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #60a5fa;
+            font-size: 0.8rem;
+        }
+
+        /* ==================== 移动端触摸提示 ==================== */
+        .touch-hint {
+            display: none;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 8px;
+            padding: 6px 10px;
+            background: rgba(96, 165, 250, 0.08);
+            border-radius: 8px;
+        }
+
+        /* ==================== Canvas容器的响应式宽高限制 ==================== */
+        .game-area {
+            width: 100%;
+            padding: 10px;
+        }
+
+        /* ==================== 响应式设计 - 通用移动端适配 ==================== */
+        .is-mobile .theme-btn {
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+        }
+
+        .is-mobile .theme-panel {
+            top: 55px;
+            right: 10px;
+            min-width: 200px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                padding-top: max(10px, env(safe-area-inset-top));
+                align-items: flex-start;
+            }
+
             .game-container {
-                padding: 18px;
-                margin: 10px;
+                padding: 16px;
+                margin: 0;
+                border-radius: 16px;
+                max-width: 100%;
             }
 
             .game-title {
-                font-size: 1.6rem;
+                font-size: 1.5rem;
+                margin-bottom: 12px;
             }
 
             .score-panel {
-                gap: 15px;
+                gap: 12px;
+                margin-bottom: 12px;
             }
 
             .score-item {
-                padding: 10px 16px;
+                padding: 8px 14px;
                 font-size: 0.85rem;
+            }
+
+            .score-item .value {
+                font-size: 1.15rem;
+            }
+
+            .control-panel {
+                gap: 8px;
+                margin-bottom: 12px;
             }
 
             .btn {
-                padding: 10px 18px;
+                padding: 10px 16px;
                 font-size: 0.85rem;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .status {
+                font-size: 0.9rem;
+                min-height: 24px;
+                margin-bottom: 10px;
+                padding: 6px 10px;
             }
 
             .rules {
-                padding: 14px;
+                padding: 12px;
+            }
+
+            .rules h3 {
+                font-size: 0.9rem;
+                margin-bottom: 8px;
             }
 
             .rules li {
+                font-size: 0.78rem;
+                padding: 3px 0;
+                padding-left: 18px;
+            }
+
+            .touch-controls {
+                display: flex;
+            }
+
+            .touch-hint {
+                display: block;
+            }
+
+            .dpad {
+                grid-template-columns: repeat(3, 56px);
+                grid-template-rows: repeat(3, 56px);
+            }
+        }
+
+        /* 小屏手机 (如 iPhone SE) */
+        @media (max-width: 380px) {
+            .game-container { padding: 12px; }
+            .game-title { font-size: 1.3rem; }
+            .dpad {
+                grid-template-columns: repeat(3, 52px);
+                grid-template-rows: repeat(3, 52px);
+            }
+            .dpad-btn { font-size: 1.5rem; }
+        }
+
+        /* ==================== 横屏布局优化 ==================== */
+        @media (orientation: landscape) and (max-height: 500px) {
+            body {
+                padding: 8px;
+                align-items: center;
+            }
+
+            .game-container {
+                padding: 12px;
+                display: grid;
+                grid-template-columns: 1fr 170px;
+                grid-template-rows: auto auto auto;
+                gap: 10px;
+                max-width: 900px;
+            }
+
+            .game-title {
+                grid-column: 1 / -1;
+                font-size: 1.2rem;
+                margin-bottom: 0;
+            }
+
+            .score-panel {
+                grid-column: 1 / -1;
+                margin-bottom: 0;
+            }
+
+            .game-area {
+                grid-column: 1;
+                grid-row: 3 / 6;
+                margin-bottom: 0;
+            }
+
+            .control-panel {
+                grid-column: 2;
+                grid-row: 3;
+                flex-direction: column;
+                margin-bottom: 0;
+            }
+
+            .btn {
+                padding: 8px 12px;
                 font-size: 0.8rem;
+                width: 100%;
+            }
+
+            .status {
+                grid-column: 2;
+                grid-row: 4;
+                font-size: 0.8rem;
+                margin-bottom: 0;
+            }
+
+            .rules {
+                grid-column: 2;
+                grid-row: 5;
+                padding: 8px;
+            }
+
+            .rules h3 { font-size: 0.8rem; }
+            .rules li { font-size: 0.7rem; }
+
+            .touch-controls {
+                grid-column: 2;
+                grid-row: 6;
+                margin-top: 8px;
+            }
+
+            .dpad {
+                grid-template-columns: repeat(3, 46px);
+                grid-template-rows: repeat(3, 46px);
+            }
+
+            .dpad-btn { font-size: 1.3rem; }
+
+            .touch-hint { display: none; }
+        }
+
+        /* 大屏平板 */
+        @media (min-width: 768px) and (pointer: coarse) {
+            .touch-controls {
+                display: flex;
+            }
+            .dpad {
+                grid-template-columns: repeat(3, 72px);
+                grid-template-rows: repeat(3, 72px);
             }
         }
     </style>
@@ -483,18 +798,62 @@
             <h3>游戏规则</h3>
             <ul>
                 <li>使用方向键 ↑↓←→ 或 WASD 控制蛇移动</li>
+                <li>移动端：可使用下方方向键或在游戏区域滑动</li>
                 <li>吃到食物后蛇身增长并获得 10 分</li>
                 <li>撞到边界或自身身体时游戏结束</li>
                 <li>按空格键暂停/继续游戏</li>
             </ul>
         </div>
+
+        <!-- 触屏虚拟方向键 -->
+        <div class="touch-controls">
+            <div class="dpad" id="dpad">
+                <button class="dpad-btn dpad-up" data-dir="up" aria-label="上">▲</button>
+                <button class="dpad-btn dpad-left" data-dir="left" aria-label="左">◀</button>
+                <div class="dpad-center">GO</div>
+                <button class="dpad-btn dpad-right" data-dir="right" aria-label="右">▶</button>
+                <button class="dpad-btn dpad-down" data-dir="down" aria-label="下">▼</button>
+            </div>
+        </div>
+
+        <div class="touch-hint">💡 提示：在游戏区域滑动手指也可以改变方向</div>
+    </div>
+
+    <!-- 屏幕方向提示（仅极端尺寸时显示） -->
+    <div class="orientation-notice" id="orientationNotice">
+        <div class="rotate-icon">📱</div>
+        <h2>请旋转您的设备</h2>
+        <p>为获得最佳游戏体验，建议使用竖屏或横屏模式，并确保屏幕尺寸足够大</p>
+        <button id="dismissOrientation">继续游戏</button>
     </div>
 
     <script>
         /**
+         * ==================== 环境检测 ====================
+         */
+        const ENV = {
+            isMobile: (function () {
+                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                    || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+            })(),
+            isTouch: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
+            isIOS: /iPhone|iPad|iPod/i.test(navigator.userAgent),
+            isAndroid: /Android/i.test(navigator.userAgent),
+            lowEnd: (function () {
+                // 简单的低性能设备判断：小屏 + 低端 CPU 核心
+                const cores = navigator.hardwareConcurrency || 4;
+                return cores <= 4 && window.innerWidth < 500;
+            })()
+        };
+
+        /**
          * ==================== 游戏配置 ====================
          */
         const CONFIG = {
+            // 默认基准配置，实际运行值由 computeResponsiveConfig() 动态计算
+            BASE_GRID_SIZE: 18,
+            BASE_GRID_COLS: 22,
+            BASE_GRID_ROWS: 16,
             GRID_SIZE: 18,
             GRID_COLS: 22,
             GRID_ROWS: 16,
@@ -502,6 +861,7 @@
             SPEED_INCREMENT: 3,
             MIN_SPEED: 50,
             FOOD_SCORE: 10,
+            SWIPE_THRESHOLD: 20, // 滑动手势最小像素
             THEMES: {
                 default: {
                     name: '暗夜护眼',
@@ -536,32 +896,142 @@
         };
 
         /**
+         * 根据可用尺寸动态计算合适的网格大小与列/行数
+         */
+        function computeResponsiveConfig() {
+            // 获取游戏容器内部可用宽度
+            const gameArea = document.getElementById('gameCanvas')?.parentElement;
+            const container = document.querySelector('.game-container');
+            let availableWidth = Math.min(window.innerWidth - 60, 640);
+            let availableHeight = Math.min(window.innerHeight - 340, 520);
+
+            if (container && gameArea) {
+                const rect = container.getBoundingClientRect();
+                availableWidth = Math.min(rect.width - 40, availableWidth);
+                // 横屏模式下给右侧控件留空间
+                if (window.innerHeight < window.innerWidth && window.innerHeight < 600) {
+                    availableHeight = window.innerHeight - 80;
+                }
+            }
+
+            availableWidth = Math.max(200, availableWidth);
+            availableHeight = Math.max(200, availableHeight);
+
+            // 根据屏幕尺寸选择合适的格子像素大小
+            let gridSize = 18;
+            if (window.innerWidth < 380) gridSize = 14;
+            else if (window.innerWidth < 500) gridSize = 16;
+            else if (window.innerWidth < 800) gridSize = 18;
+            else gridSize = 20;
+
+            // 保证列/行数为整数，并保持宽高比接近原始 22:16
+            const targetRatio = CONFIG.BASE_GRID_COLS / CONFIG.BASE_GRID_ROWS;
+            const availRatio = availableWidth / availableHeight;
+
+            let cols, rows;
+            if (availRatio >= targetRatio) {
+                // 高度为约束
+                rows = Math.max(10, Math.floor(availableHeight / gridSize));
+                cols = Math.round(rows * targetRatio);
+            } else {
+                // 宽度为约束
+                cols = Math.max(14, Math.floor(availableWidth / gridSize));
+                rows = Math.round(cols / targetRatio);
+            }
+
+            // 再次根据可用空间微调，确保不超出
+            const testWidth = cols * gridSize;
+            const testHeight = rows * gridSize;
+            if (testWidth > availableWidth) {
+                const shrink = availableWidth / testWidth;
+                gridSize = Math.max(8, Math.floor(gridSize * shrink));
+            }
+            if (testHeight > availableHeight) {
+                const shrink = availableHeight / testHeight;
+                gridSize = Math.max(8, Math.floor(gridSize * shrink));
+            }
+
+            CONFIG.GRID_SIZE = gridSize;
+            CONFIG.GRID_COLS = cols;
+            CONFIG.GRID_ROWS = rows;
+        }
+
+        /**
          * ==================== 音效管理器 ====================
          */
         class SoundManager {
             constructor() {
                 this.audioContext = null;
+                this._unlocked = false;
             }
 
             init() {
                 if (!this.audioContext) {
-                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const AC = window.AudioContext || window.webkitAudioContext;
+                    if (!AC) return;
+                    try {
+                        this.audioContext = new AC();
+                    } catch (e) {
+                        return;
+                    }
                 }
+                // iOS Safari 要求用户手势后才能启动 AudioContext
+                if (this.audioContext && this.audioContext.state === 'suspended') {
+                    this.audioContext.resume().then(() => {
+                        this._unlocked = true;
+                    }).catch(() => {});
+                } else {
+                    this._unlocked = true;
+                }
+            }
+
+            /**
+             * 在首次用户交互时解锁音频（iOS 必备）
+             */
+            bindFirstTouchUnlock() {
+                const unlock = () => {
+                    this.init();
+                    // 生成一个几乎无声的短音来"激活"AudioContext
+                    if (this.audioContext) {
+                        try {
+                            const o = this.audioContext.createOscillator();
+                            const g = this.audioContext.createGain();
+                            g.gain.value = 0.0001;
+                            o.connect(g);
+                            g.connect(this.audioContext.destination);
+                            o.start();
+                            o.stop(this.audioContext.currentTime + 0.01);
+                        } catch (e) {}
+                    }
+                    document.removeEventListener('touchstart', unlock, true);
+                    document.removeEventListener('touchend', unlock, true);
+                    document.removeEventListener('click', unlock, true);
+                    document.removeEventListener('keydown', unlock, true);
+                };
+                document.addEventListener('touchstart', unlock, { once: true, passive: true });
+                document.addEventListener('touchend', unlock, { once: true, passive: true });
+                document.addEventListener('click', unlock, { once: true });
+                document.addEventListener('keydown', unlock, { once: true });
             }
 
             playTone(frequency, duration, type = 'sine', volume = 0.08) {
                 if (!this.audioContext) return;
+                // 如果被挂起则尝试恢复
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume().catch(() => {});
+                }
                 try {
+                    const now = this.audioContext.currentTime;
                     const oscillator = this.audioContext.createOscillator();
                     const gainNode = this.audioContext.createGain();
                     oscillator.type = type;
-                    oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-                    gainNode.gain.setValueAtTime(volume, this.audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+                    oscillator.frequency.setValueAtTime(frequency, now);
+                    gainNode.gain.setValueAtTime(volume, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration);
                     oscillator.connect(gainNode);
                     gainNode.connect(this.audioContext.destination);
-                    oscillator.start(this.audioContext.currentTime);
-                    oscillator.stop(this.audioContext.currentTime + duration);
+                    oscillator.start(now);
+                    oscillator.stop(now + duration);
                 } catch (e) {}
             }
 
@@ -797,19 +1267,22 @@
         class CanvasRenderer {
             constructor(canvasId) {
                 this.canvas = document.getElementById(canvasId);
-                this.ctx = this.canvas.getContext('2d');
+                this.ctx = this.canvas.getContext('2d', { alpha: false });
                 this.setupCanvas();
             }
 
             setupCanvas() {
-                const dpr = window.devicePixelRatio || 1;
+                const dpr = Math.min(window.devicePixelRatio || 1, ENV.lowEnd ? 1.5 : 2);
                 const width = CONFIG.GRID_COLS * CONFIG.GRID_SIZE;
                 const height = CONFIG.GRID_ROWS * CONFIG.GRID_SIZE;
                 this.canvas.width = width * dpr;
                 this.canvas.height = height * dpr;
                 this.canvas.style.width = width + 'px';
                 this.canvas.style.height = height + 'px';
+                this.ctx.setTransform(1, 0, 0, 1, 0, 0);
                 this.ctx.scale(dpr, dpr);
+                // 图像平滑开关：移动网格关闭锯齿感更强，但性能更好
+                this.ctx.imageSmoothingEnabled = !ENV.lowEnd;
             }
 
             clear() {
@@ -819,6 +1292,19 @@
 
             drawGrid() {
                 const gs = CONFIG.GRID_SIZE;
+                // 移动端/低性能设备跳过网格线，直接用纯色底图平铺更快
+                if (ENV.lowEnd || ENV.isMobile) {
+                    // 先画两色棋盘：偶数格，减少 fillStyle 切换
+                    for (let y = 0; y < CONFIG.GRID_ROWS; y++) {
+                        for (let x = 0; x < CONFIG.GRID_COLS; x++) {
+                            const isAlt = (x + y) % 2 === 0;
+                            this.ctx.fillStyle = isAlt ? CONFIG.COLORS.BG_DARK : CONFIG.COLORS.BG_LIGHT;
+                            this.ctx.fillRect(x * gs, y * gs, gs, gs);
+                        }
+                    }
+                    return;
+                }
+                // 桌面：完整网格
                 for (let x = 0; x < CONFIG.GRID_COLS; x++) {
                     for (let y = 0; y < CONFIG.GRID_ROWS; y++) {
                         const isAlt = (x + y) % 2 === 0;
@@ -844,7 +1330,9 @@
 
             drawSnake(snake) {
                 const gs = CONFIG.GRID_SIZE;
-                snake.segments.forEach((segment, index) => {
+                const total = snake.segments.length;
+                for (let index = 0; index < total; index++) {
+                    const segment = snake.segments[index];
                     const x = segment.x * gs;
                     const y = segment.y * gs;
                     const padding = 1;
@@ -856,7 +1344,7 @@
                     } else {
                         this.drawSnakeBody(x + padding, y + padding, size, radius, index);
                     }
-                });
+                }
             }
 
             drawSnakeHead(x, y, size, radius) {
@@ -881,11 +1369,18 @@
             }
 
             drawSnakeBody(x, y, size, radius, index) {
+                // 移动端/低性能设备：纯色替代渐变
+                if (ENV.lowEnd) {
+                    this.ctx.fillStyle = (index % 2 === 0) ? CONFIG.COLORS.SNAKE_BODY : CONFIG.COLORS.SNAKE_BODY_ALT;
+                    this.ctx.beginPath();
+                    this.roundRect(x, y, size, size, radius);
+                    this.ctx.fill();
+                    return;
+                }
                 const alpha = Math.max(0.6, 1 - index * 0.015);
                 const gradient = this.ctx.createLinearGradient(x, y, x + size, y + size);
                 gradient.addColorStop(0, `rgba(16, 185, 129, ${alpha})`);
                 gradient.addColorStop(1, `rgba(5, 150, 105, ${alpha})`);
-
                 this.ctx.fillStyle = gradient;
                 this.ctx.beginPath();
                 this.roundRect(x, y, size, size, radius);
@@ -899,13 +1394,16 @@
                 const baseRadius = gs / 2 - 3;
                 const pulseRadius = baseRadius + Math.sin(food.pulsePhase) * 1.5;
 
-                const glow = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, pulseRadius * 1.5);
-                glow.addColorStop(0, 'rgba(244, 114, 182, 0.3)');
-                glow.addColorStop(1, 'rgba(244, 114, 182, 0)');
-                this.ctx.fillStyle = glow;
-                this.ctx.beginPath();
-                this.ctx.arc(cx, cy, pulseRadius * 1.5, 0, Math.PI * 2);
-                this.ctx.fill();
+                // 低性能设备跳过光晕
+                if (!ENV.lowEnd) {
+                    const glow = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, pulseRadius * 1.5);
+                    glow.addColorStop(0, 'rgba(244, 114, 182, 0.3)');
+                    glow.addColorStop(1, 'rgba(244, 114, 182, 0)');
+                    this.ctx.fillStyle = glow;
+                    this.ctx.beginPath();
+                    this.ctx.arc(cx, cy, pulseRadius * 1.5, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
 
                 const gradient = this.ctx.createRadialGradient(
                     cx - pulseRadius * 0.3, cy - pulseRadius * 0.3, 0,
@@ -920,10 +1418,12 @@
                 this.ctx.arc(cx, cy, pulseRadius, 0, Math.PI * 2);
                 this.ctx.fill();
 
-                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-                this.ctx.beginPath();
-                this.ctx.arc(cx - pulseRadius * 0.3, cy - pulseRadius * 0.3, pulseRadius * 0.25, 0, Math.PI * 2);
-                this.ctx.fill();
+                if (!ENV.lowEnd) {
+                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    this.ctx.beginPath();
+                    this.ctx.arc(cx - pulseRadius * 0.3, cy - pulseRadius * 0.3, pulseRadius * 0.25, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
             }
 
             roundRect(x, y, w, h, r) {
@@ -950,9 +1450,10 @@
 
         /**
          * ==================== 输入处理器 ====================
+         * 同时处理：键盘、D-pad触摸、Canvas上的滑动手势
          */
         class InputHandler {
-            constructor() {
+            constructor(canvas) {
                 this.keyMap = {
                     'ArrowUp': { dx: 0, dy: -1 },
                     'ArrowDown': { dx: 0, dy: 1 },
@@ -963,13 +1464,28 @@
                     'KeyA': { dx: -1, dy: 0 },
                     'KeyD': { dx: 1, dy: 0 }
                 };
+                this.touchStart = { x: 0, y: 0, active: false };
                 this.onDirectionChange = null;
                 this.onPauseToggle = null;
                 this.onStart = null;
+                this.canvas = canvas;
                 this.setupEventListeners();
             }
 
+            setDirection(dir) {
+                const map = {
+                    up: { dx: 0, dy: -1 },
+                    down: { dx: 0, dy: 1 },
+                    left: { dx: -1, dy: 0 },
+                    right: { dx: 1, dy: 0 }
+                };
+                if (map[dir] && this.onDirectionChange) {
+                    this.onDirectionChange(map[dir].dx, map[dir].dy);
+                }
+            }
+
             setupEventListeners() {
+                // --- 键盘 ---
                 document.addEventListener('keydown', (e) => {
                     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
                         e.preventDefault();
@@ -982,6 +1498,120 @@
                         if (this.onPauseToggle) this.onPauseToggle();
                     }
                 });
+
+                // --- D-pad 虚拟方向键 ---
+                const dpad = document.getElementById('dpad');
+                if (dpad) {
+                    const buttons = dpad.querySelectorAll('.dpad-btn');
+                    buttons.forEach(btn => {
+                        const dir = btn.dataset.dir;
+                        const activate = (e) => {
+                            if (e.cancelable) e.preventDefault();
+                            btn.classList.add('active');
+                            this.setDirection(dir);
+                        };
+                        const deactivate = () => {
+                            btn.classList.remove('active');
+                        };
+                        // 触摸事件（被动模式，避免触发滚动）
+                        btn.addEventListener('touchstart', activate, { passive: false });
+                        btn.addEventListener('touchend', deactivate, { passive: true });
+                        btn.addEventListener('touchcancel', deactivate, { passive: true });
+                        // 鼠标事件（桌面模式也可用）
+                        btn.addEventListener('mousedown', activate);
+                        btn.addEventListener('mouseup', deactivate);
+                        btn.addEventListener('mouseleave', deactivate);
+                        // 点击：确保响应
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            this.setDirection(dir);
+                        });
+                    });
+                }
+
+                // --- Canvas 区域滑动手势 ---
+                if (this.canvas) {
+                    const handleStart = (x, y) => {
+                        this.touchStart.x = x;
+                        this.touchStart.y = y;
+                        this.touchStart.active = true;
+                    };
+                    const handleMove = (x, y) => {
+                        if (!this.touchStart.active) return;
+                        const dx = x - this.touchStart.x;
+                        const dy = y - this.touchStart.y;
+                        const threshold = CONFIG.SWIPE_THRESHOLD;
+                        if (Math.abs(dx) < threshold && Math.abs(dy) < threshold) return;
+                        // 取位移较大的方向
+                        if (Math.abs(dx) > Math.abs(dy)) {
+                            this.setDirection(dx > 0 ? 'right' : 'left');
+                        } else {
+                            this.setDirection(dy > 0 ? 'down' : 'up');
+                        }
+                        // 连续滑动：重置起点，便于长距离持续转向
+                        this.touchStart.x = x;
+                        this.touchStart.y = y;
+                    };
+
+                    this.canvas.addEventListener('touchstart', (e) => {
+                        if (e.touches.length > 0) {
+                            e.preventDefault();
+                            const t = e.touches[0];
+                            handleStart(t.clientX, t.clientY);
+                        }
+                    }, { passive: false });
+
+                    this.canvas.addEventListener('touchmove', (e) => {
+                        if (e.touches.length > 0) {
+                            e.preventDefault();
+                            const t = e.touches[0];
+                            handleMove(t.clientX, t.clientY);
+                        }
+                    }, { passive: false });
+
+                    this.canvas.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        this.touchStart.active = false;
+                    }, { passive: false });
+
+                    // 桌面端：鼠标拖动（调试/辅助）
+                    let mouseDown = false;
+                    this.canvas.addEventListener('mousedown', (e) => {
+                        mouseDown = true;
+                        handleStart(e.clientX, e.clientY);
+                    });
+                    this.canvas.addEventListener('mousemove', (e) => {
+                        if (mouseDown) handleMove(e.clientX, e.clientY);
+                    });
+                    this.canvas.addEventListener('mouseup', () => {
+                        mouseDown = false;
+                        this.touchStart.active = false;
+                    });
+                    this.canvas.addEventListener('mouseleave', () => {
+                        mouseDown = false;
+                        this.touchStart.active = false;
+                    });
+                }
+
+                // --- 屏幕方向变化监听 ---
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(() => {
+                        if (this.onLayoutChange) this.onLayoutChange();
+                    }, 200);
+                });
+
+                window.addEventListener('resize', () => {
+                    if (this._resizeTimer) clearTimeout(this._resizeTimer);
+                    this._resizeTimer = setTimeout(() => {
+                        if (this.onLayoutChange) this.onLayoutChange();
+                    }, 150);
+                });
+
+                // 防止 iOS Safari 双击缩放 / 长按菜单
+                if (this.canvas) {
+                    this.canvas.addEventListener('gesturestart', (e) => e.preventDefault());
+                    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+                }
             }
         }
 
@@ -990,14 +1620,35 @@
          */
         class SnakeGame {
             constructor() {
+                // 标记为移动端，便于 CSS 适配
+                if (ENV.isMobile) document.body.classList.add('is-mobile');
+
+                // 先重新计算响应式配置再初始化渲染器
+                computeResponsiveConfig();
+
                 this.themeManager = new ThemeManager();
                 this.state = new GameState();
                 this.snake = new Snake();
                 this.food = new Food();
                 this.renderer = new CanvasRenderer('gameCanvas');
-                this.inputHandler = new InputHandler();
+                this.inputHandler = new InputHandler(this.renderer.canvas);
                 this.soundManager = new SoundManager();
-                this.gameLoop = null;
+
+                // rAF 循环状态
+                this.rafId = null;
+                this.lastStepTime = 0;
+
+                // 页面可见性变化时暂停
+                this._visibilityHandler = () => {
+                    if (document.hidden && this.state.status === 'running') {
+                        this.togglePause();
+                    }
+                };
+
+                // 布局变化：重新计算 canvas 尺寸并重新渲染
+                this.inputHandler.onLayoutChange = () => this.handleLayoutChange();
+
+                this.soundManager.bindFirstTouchUnlock();
 
                 this.initUI();
                 this.bindEvents();
@@ -1027,6 +1678,9 @@
                 this.inputHandler.onDirectionChange = (dx, dy) => {
                     if (this.state.status === 'running') {
                         this.snake.setDirection(dx, dy);
+                    } else if (this.state.status === 'idle') {
+                        // 空闲时用户按方向 → 启动游戏
+                        this.start();
                     }
                 };
 
@@ -1037,6 +1691,48 @@
                         this.togglePause();
                     }
                 };
+
+                document.addEventListener('visibilitychange', this._visibilityHandler);
+            }
+
+            handleLayoutChange() {
+                // 屏幕方向/尺寸改变时，重新计算 canvas 尺寸
+                try {
+                    const wasRunning = this.state.status === 'running';
+                    if (wasRunning) this.stopGameLoop();
+                    // 保存食物/蛇位置，重新计算配置后再重建
+                    const snakeBackup = JSON.parse(JSON.stringify(this.snake.segments));
+                    const snakeDir = { ...this.snake.direction };
+                    const foodBackup = { x: this.food.x, y: this.food.y };
+
+                    computeResponsiveConfig();
+                    // 若蛇位置超出新的网格，重置到中心
+                    const colsOk = snakeBackup.every(s => s.x >= 0 && s.x < CONFIG.GRID_COLS);
+                    const rowsOk = snakeBackup.every(s => s.y >= 0 && s.y < CONFIG.GRID_ROWS);
+                    const foodOk = foodBackup.x >= 0 && foodBackup.x < CONFIG.GRID_COLS &&
+                                   foodBackup.y >= 0 && foodBackup.y < CONFIG.GRID_ROWS;
+
+                    this.renderer = new CanvasRenderer('gameCanvas');
+                    // 重新绑定触摸事件到新 canvas（虽然 inputHandler 已监听 DOM 事件，仍需更新引用）
+                    this.inputHandler.canvas = this.renderer.canvas;
+
+                    if (colsOk && rowsOk) {
+                        this.snake.segments = snakeBackup;
+                        this.snake.direction = snakeDir;
+                    } else {
+                        this.snake.init();
+                    }
+                    if (foodOk) {
+                        this.food.x = foodBackup.x;
+                        this.food.y = foodBackup.y;
+                    } else {
+                        this.food.spawn(this.snake.segments);
+                    }
+                    this.renderer.render(this.snake, this.food);
+                    if (wasRunning) this.runGameLoop();
+                } catch (e) {
+                    console.warn('handleLayoutChange error', e);
+                }
             }
 
             start() {
@@ -1083,17 +1779,26 @@
             }
 
             runGameLoop() {
-                if (this.gameLoop) clearInterval(this.gameLoop);
-                this.gameLoop = setInterval(() => {
-                    this.update();
+                this.stopGameLoop();
+                this.lastStepTime = performance.now();
+                const loop = (now) => {
+                    if (this.state.status !== 'running') return;
+                    // 以 speed 为节拍前进（snake 一次移动 = 一步），同时每帧刷新画面
+                    const elapsed = now - this.lastStepTime;
+                    if (elapsed >= this.state.speed) {
+                        this.update();
+                        this.lastStepTime = now;
+                    }
                     this.render();
-                }, this.state.speed);
+                    this.rafId = requestAnimationFrame(loop);
+                };
+                this.rafId = requestAnimationFrame(loop);
             }
 
             stopGameLoop() {
-                if (this.gameLoop) {
-                    clearInterval(this.gameLoop);
-                    this.gameLoop = null;
+                if (this.rafId !== null) {
+                    cancelAnimationFrame(this.rafId);
+                    this.rafId = null;
                 }
             }
 
@@ -1119,7 +1824,6 @@
                     this.state.increaseSpeed();
                     this.food.spawn(this.snake.segments);
                     this.updateScoreDisplay();
-                    this.runGameLoop();
                 } else {
                     this.snake.shrink();
                 }
@@ -1157,9 +1861,39 @@
             }
         }
 
+        /**
+         * 屏幕方向提示：当可用尺寸极端小时提示用户
+         */
+        function setupOrientationNotice() {
+            const notice = document.getElementById('orientationNotice');
+            if (!notice) return;
+            const dismiss = notice.querySelector('button');
+            if (dismiss) {
+                dismiss.addEventListener('click', () => notice.classList.remove('show'));
+            }
+            // 检测极端尺寸，不强制显示，仅在非常小时给出提醒（避免干扰）
+            const check = () => {
+                if (window.innerWidth < 240 || window.innerHeight < 240) {
+                    notice.classList.add('show');
+                }
+            };
+            window.addEventListener('resize', check);
+            window.addEventListener('orientationchange', check);
+        }
+
         // 页面加载完成后初始化游戏
         document.addEventListener('DOMContentLoaded', () => {
+            setupOrientationNotice();
             new SnakeGame();
+        });
+
+        // 页面切回时恢复 AudioContext（某些浏览器会自动挂起）
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && window.snakeGame && window.snakeGame.soundManager &&
+                window.snakeGame.soundManager.audioContext &&
+                window.snakeGame.soundManager.audioContext.state === 'suspended') {
+                window.snakeGame.soundManager.audioContext.resume().catch(() => {});
+            }
         });
     </script>
 </body>
